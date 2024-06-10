@@ -3,23 +3,46 @@
     <div class="flex-1 flex flex-col p-4 gap-4">
       <div class="flex flex-col">
         <div
-          class="flex from-red-600 bg-gradient-to-r to-blue-600 w-full rounded-lg p-4"
+          :class="
+            cn('flex w-full rounded-lg p-4', {
+              'from-red-600 bg-gradient-to-r to-blue-600': winingState === null,
+              'bg-red-600': winingState?.winner === 'red',
+              'bg-blue-600': winingState?.winner === 'blue',
+            })
+          "
         >
           <div
-            class="flex-1 relative flex items-center justify-start text-white font-bold"
+            v-if="!winingState?.winner || winingState?.winner === 'red'"
+            :class="
+              cn(
+                'flex-1 relative flex items-center text-white font-bold',
+                winingState?.winner === 'red'
+                  ? 'justify-center'
+                  : 'justify-start'
+              )
+            "
           >
-            RED
+            RED {{ winingState?.winner === "red" ? "WON" : "" }}
           </div>
           <div
-            class="flex-1 relative flex items-center justify-end text-white font-bold"
+            v-if="!winingState?.winner || winingState?.winner === 'blue'"
+            :class="
+              cn(
+                'flex-1 relative flex items-center text-white font-bold',
+                winingState?.winner === 'blue'
+                  ? 'justify-center'
+                  : 'justify-end'
+              )
+            "
           >
-            BLUE
+            BLUE {{ winingState?.winner === "blue" ? "WON" : "" }}
           </div>
         </div>
       </div>
 
       <div class="flex-1 border p-4 rounded-lg flex flex-col">
         <h1 class="text-xl">Board</h1>
+        {{ winingState }}
         <table ref="tableRef" class="border border-collapse w-full table-fixed">
           <colgroup>
             <col v-for="n in colNumber" :key="n" />
@@ -27,7 +50,7 @@
           <tbody>
             <tr v-for="(row, rowIndex) in boardState" :key="rowIndex">
               <td
-                v-for="(cell, cellIndex) in row"
+                v-for="(_, cellIndex) in row"
                 :key="`${rowIndex}-${cellIndex}-${
                   gameState[rowIndex]?.[cellIndex]?.owner_id ?? 'uncheck'
                 }`"
@@ -47,8 +70,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import Vue, { computed, onMounted, onUnmounted, ref } from "vue";
 import type { GameState } from "@/lib/types/game-state";
+import { cn, generateWinCombinations, type WinCondition } from "@/lib/utils";
 
 const generateStateCellState = (gridLength: number): GameState => {
   const state = [];
@@ -67,6 +91,9 @@ const colNumber = ref(3);
 const tableRef = ref(null);
 const cellHeight = ref(0);
 const boardState = computed(() => generateStateCellState(colNumber.value));
+const winCombinations = computed(() =>
+  generateWinCombinations(colNumber.value)
+);
 const gameState = ref<GameState>([]);
 const ownerTurn = ref<"red" | "blue">("red");
 
@@ -82,16 +109,57 @@ const onCellCheck = (rowIndex: number, cellIndex: number) => {
   const row = gameState.value[rowIndex];
 
   if (!row) {
-    gameState.value[rowIndex] = [];
+    Vue.set(gameState.value, rowIndex, []);
   }
   const cell = gameState.value[rowIndex];
   if (cell[cellIndex]) return;
-  gameState.value[rowIndex][cellIndex] = {
+  Vue.set(gameState.value[rowIndex], cellIndex, {
     owner_id: ownerTurn.value,
-  };
+  });
   ownerTurn.value = ownerTurn.value === "red" ? "blue" : "red";
-  console.log(rowIndex, cellIndex, gameState);
 };
+
+const winingState = computed(() => {
+  const moves = gameState.value;
+  console.log(moves);
+
+  // check if there is a wining combination match and who match it
+  let winner: string | null = null;
+  let combination: WinCondition | null = null;
+
+  for (const winCombination of winCombinations.value) {
+    let currentOwner = null;
+    for (const cells of winCombination) {
+      const [row, cell] = cells;
+      const cellOwner = moves[row]?.[cell]?.owner_id;
+      if (!cellOwner) {
+        currentOwner = null;
+        break;
+      }
+
+      if (!currentOwner) {
+        currentOwner = cellOwner;
+      } else if (currentOwner !== cellOwner) {
+        currentOwner = null;
+        break;
+      }
+    }
+
+    if (currentOwner) {
+      winner = currentOwner;
+      combination = winCombination;
+      break;
+    }
+  }
+
+  if (!winner || !combination) {
+    return null;
+  }
+
+  return { winner, combination };
+});
+
+console.log(winingState.value);
 
 onMounted(() => {
   listenerCell();
