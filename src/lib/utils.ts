@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import type { GameState } from "@/lib/types/game-state";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -47,4 +48,44 @@ export function generateWinCombinations(size: number) {
   }
 
   return [...horizontal, ...vertical, diagonalLeftRight, diagonalRightLeft];
+}
+
+export function isWinningWithMoves(
+  moves: GameState,
+  winCombinations: WinCondition[]
+) {
+  // check if there is a wining combination match and who match it
+  let winner: string | null = null;
+  let combination: WinCondition | null = null;
+
+  for (const winCombination of winCombinations) {
+    let currentOwner = null;
+    for (const cells of winCombination) {
+      const [row, cell] = cells;
+      const cellOwner = moves[row]?.[cell]?.owner_id;
+      if (!cellOwner) {
+        currentOwner = null;
+        break;
+      }
+
+      if (!currentOwner) {
+        currentOwner = cellOwner;
+      } else if (currentOwner !== cellOwner) {
+        currentOwner = null;
+        break;
+      }
+    }
+
+    if (currentOwner) {
+      winner = currentOwner;
+      combination = winCombination;
+      break;
+    }
+  }
+
+  if (!winner || !combination) {
+    return null;
+  }
+
+  return { winner, combination };
 }
