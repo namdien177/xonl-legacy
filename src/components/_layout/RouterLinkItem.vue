@@ -15,21 +15,27 @@
   </router-link>
 </template>
 
-<script setup lang="ts">
+<script lang="ts">
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-defineProps({
-  to: {
-    type: String,
-    required: true,
+export default {
+  methods: {
+    buttonVariants,
+    cn,
   },
-  className: {
-    type: String,
+  props: {
+    to: {
+      type: String,
+      required: true,
+    },
+    className: {
+      type: String,
+    },
+    activeClassName: {
+      type: String,
+      default: "font-bold",
+    },
   },
-  activeClassName: {
-    type: String,
-    default: "font-bold",
-  },
-});
+};
 </script>

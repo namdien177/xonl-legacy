@@ -10,6 +10,12 @@
     </div>
   </header>
 </template>
-<script setup lang="ts">
+<script lang="ts">
 import RouterLinkItem from "@/components/_layout/RouterLinkItem.vue";
+
+export default {
+  components: {
+    RouterLinkItem,
+  },
+};
 </script>

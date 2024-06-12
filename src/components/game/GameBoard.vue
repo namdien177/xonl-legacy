@@ -1,33 +1,38 @@
 <template>
-  <table ref="tableRef" class="border border-collapse w-full table-fixed">
-    <colgroup>
-      <col v-for="n in colNumber" :key="n" />
-    </colgroup>
-    <tbody>
-      <tr v-for="(row, rowIndex) in boardState" :key="rowIndex">
-        <td
-          v-for="(_, cellIndex) in row"
-          :key="`${rowIndex}-${cellIndex}-${
-            gameState[rowIndex]?.[cellIndex]?.owner_id ?? 'uncheck'
-          }`"
-          @click="onCellClick(rowIndex, cellIndex)"
-          :style="{
-            height: cellHeight + 'px',
-          }"
-          :class="
-            cn('border p-4 align-middle text-center', {
-              'bg-blue-500 text-white':
-                gameState[rowIndex]?.[cellIndex]?.owner_id === 'blue',
-              'bg-red-500 text-white':
-                gameState[rowIndex]?.[cellIndex]?.owner_id === 'red',
-            })
-          "
-        >
-          {{ String(`${rowIndex}-${cellIndex}`) }}
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="flex justify-center w-full">
+    <table
+      ref="tableRef"
+      class="border border-collapse w-full max-w-[calc(100vh/2)] min-w-[300px] table-fixed"
+    >
+      <colgroup>
+        <col v-for="n in colNumber" :key="n" />
+      </colgroup>
+      <tbody>
+        <tr v-for="(row, rowIndex) in boardState" :key="rowIndex">
+          <td
+            v-for="(_, cellIndex) in row"
+            :key="`${rowIndex}-${cellIndex}-${
+              gameState[rowIndex]?.[cellIndex]?.owner_id ?? 'uncheck'
+            }`"
+            @click="onCellClick(rowIndex, cellIndex)"
+            :style="{
+              height: cellHeight + 'px',
+            }"
+            :class="
+              cn('border p-4 align-middle text-center', {
+                'bg-blue-500 text-white':
+                  gameState[rowIndex]?.[cellIndex]?.owner_id === 'blue',
+                'bg-red-500 text-white':
+                  gameState[rowIndex]?.[cellIndex]?.owner_id === 'red',
+              })
+            "
+          >
+            {{ String(`${rowIndex}-${cellIndex}`) }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <script lang="ts">

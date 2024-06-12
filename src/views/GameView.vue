@@ -49,6 +49,12 @@
           :game-state="gameState"
           @cell-selected="onCellCheck"
         ></GameBoard>
+        <p v-if="usersLoading">Loading...</p>
+        <ul v-else>
+          <li v-for="user in users" :key="user.id">
+            {{ user.name }}
+          </li>
+        </ul>
       </div>
     </div>
 
@@ -57,7 +63,6 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
 import {
   type CellCoordinate,
   cn,
@@ -67,13 +72,18 @@ import {
 } from "@/lib/utils";
 import type { GameLogs, GameState } from "@/lib/types/game-state";
 import GameBoard from "@/components/game/GameBoard.vue";
+import { execQuery } from "@/lib/http/exec-query";
+import ky from "ky";
 
-export default defineComponent({
+type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
+export default {
   components: { GameBoard },
   methods: {
-    async fetchGameDetail(id: string) {
-      console.log(id);
-    },
     cn,
     onCellCheck([rowIndex, cellIndex]: CellCoordinate): void {
       const row = this.gameState[rowIndex];
@@ -102,6 +112,8 @@ export default defineComponent({
       ownerTurn: "red" as "red" | "blue",
       gameState: [] as GameState,
       gameLogs: [] as GameLogs,
+      users: [] as User[],
+      usersLoading: false,
     };
   },
   computed: {
@@ -136,5 +148,19 @@ export default defineComponent({
       this.$set(this.gameState[rowIndex], cellIndex, null);
     },
   },
-});
+  mounted() {
+    execQuery({
+      queryFn: () =>
+        ky
+          .get("https://jsonplaceholder.typicode.com/users")
+          .json<Array<User>>(),
+      onLoading: (isLoading) => {
+        this.usersLoading = isLoading;
+      },
+      onResolve: (users) => {
+        this.users = users;
+      },
+    });
+  },
+};
 </script>
