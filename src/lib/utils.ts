@@ -5,7 +5,7 @@ import type {
   MoveCoordinate,
   WinningCombination,
 } from "@/lib/types/game-state";
-import type { MakeWinnerProps } from "@/state/game.mutation";
+import type { MakeWinnerProps } from "@/state/game.module";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

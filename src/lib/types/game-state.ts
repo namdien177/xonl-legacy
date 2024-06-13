@@ -7,6 +7,7 @@ export type GameState = Array<Array<GamePlayer | null>>;
 export type GameMove = {
   owner_id: string;
   coordinate: MoveCoordinate;
+  timestamp: string;
 };
 
 export type GameLogs = Array<GameMove>;

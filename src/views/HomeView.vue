@@ -11,7 +11,16 @@
         solutions. All directly in Slack the moment an incident happens.
       </TypographyElement>
       <RouterLink to="/sign-in" target="_blank">
-        <ButtonElement size="sm" variant="ghost">Get Started</ButtonElement>
+        <button
+          :class="
+            buttonVariants({
+              variant: 'ghost',
+              size: 'sm',
+            })
+          "
+        >
+          Get Started
+        </button>
       </RouterLink>
     </div>
     <div class="flex flex-col md:pt-24 md:gap-36 gap-24 items-center">
@@ -32,14 +41,20 @@
       </div>
       <div class="flex flex-col gap-6 items-center">
         <TypographyElement class="max-w-2xl" variant="h1">
-          Get in touch</TypographyElement
-        >
+          Get in touch
+        </TypographyElement>
         <div>Book a demo, or hop on a call</div>
         <Link
           href="https://map.sistilli.dev/public/coding/SaaS+Boilerplate"
           target="_blank"
+          :class="
+            buttonVariants({
+              variant: 'ghost',
+              size: 'sm',
+            })
+          "
         >
-          <ButtonElement size="sm" variant="ghost"> {`Book now`}</ButtonElement>
+          Book now
         </Link>
       </div>
     </div>
@@ -48,14 +63,14 @@
 
 <script lang="ts">
 import { RouterLink } from "vue-router";
-import { ButtonElement } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { TypographyElement } from "@/components/ui/typography";
 
 export default {
+  methods: { buttonVariants },
   components: {
     RouterLink,
     TypographyElement,
-    ButtonElement,
   },
 };
 </script>

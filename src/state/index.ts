@@ -1,9 +1,10 @@
 import Vuex from "vuex";
 import {
+  createGamePlaceholder,
   GAME_MUTATIONS,
   type MakeWinnerProps,
   updateMove,
-} from "@/state/game.mutation";
+} from "@/state/game.module";
 import type { Game, GameMove } from "@/lib/types/game-state";
 import Vue from "vue";
 
@@ -37,7 +38,7 @@ const GLOBAL_STATE = new Vuex.Store({
         return;
       }
       const updateStates = updateMove(
-        { owner_id, coordinate },
+        { owner_id, coordinate, timestamp: new Date().toISOString() },
         state.playingGame
       );
       console.log(updateStates);
@@ -67,6 +68,9 @@ const GLOBAL_STATE = new Vuex.Store({
       Vue.set(state.playingGame, "status", "finished");
       Vue.set(state.playingGame, "winner", player);
       Vue.set(state.playingGame, "winCombination", winCombination);
+    },
+    [GAME_MUTATIONS.restart](state) {
+      state.playingGame = createGamePlaceholder();
     },
   },
 });

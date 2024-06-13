@@ -1,6 +1,7 @@
 import type {
   Game,
   GameMove,
+  GamePlayer,
   WinningCombination,
 } from "@/lib/types/game-state";
 import Vue from "vue";
@@ -10,6 +11,7 @@ const startPlaying = "setPlaying";
 const setMove = "setMove";
 const end = "endGame";
 const updateBoard = "updateBoard";
+const restart = "restartGame";
 
 export type MakeWinnerProps = {
   winner_id: string;
@@ -22,7 +24,26 @@ export const GAME_MUTATIONS = {
   setMove,
   updateBoard,
   end,
+  restart,
 } as const;
+
+export const createGamePlaceholder = (): Game => {
+  const users: [GamePlayer, GamePlayer] = [
+    { id: "red", name: "Red Player" },
+    { id: "blue", name: "Blue Player" },
+  ];
+
+  return {
+    name: "new game!",
+    colMode: 3,
+    moves: [],
+    logs: [],
+    winMode: "until-win",
+    status: "waiting",
+    players: users,
+    boardState: [],
+  };
+};
 
 export const updateMove = (move: GameMove, state: Game) => {
   if (state.status !== "playing") {
@@ -56,7 +77,7 @@ const updateMoveUntilWin = (
 
   const maxMovesLength = state.colMode * state.colMode;
   const currentMovesLength = state.moves.length;
-  const isNormalMove = currentMovesLength < maxMovesLength - 1;
+  const isNormalMove = currentMovesLength < maxMovesLength - 2;
   const currentTurn = state.players.find(
     (player) => player.id !== move.owner_id
   );

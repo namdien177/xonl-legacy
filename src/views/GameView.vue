@@ -1,47 +1,9 @@
 <template>
-  <div class="w-full h-[calc(100vh-3.5rem-1px)] flex gap-4">
+  <div
+    class="w-full h-[calc(100vh-3.5rem-1px)] flex flex-col md:flex-row gap-4"
+  >
     <div class="flex-1 flex flex-col p-4 gap-4 overflow-auto relative">
-      <div class="flex flex-col sticky top-0 bg-background inset-x-0 pb-4">
-        <div
-          :class="
-            cn('flex w-full rounded-lg p-4', {
-              'from-red-600 bg-gradient-to-r to-blue-600':
-                !activeGame?.winner?.id,
-              'bg-red-600': activeGame?.winner?.id === 'red',
-              'bg-blue-600': activeGame?.winner?.id === 'blue',
-            })
-          "
-        >
-          <div
-            v-if="!winningState?.winner_id || winningState?.winner_id === 'red'"
-            :class="
-              cn(
-                'flex-1 relative flex items-center text-white font-bold',
-                winningState?.winner_id === 'red'
-                  ? 'justify-center'
-                  : 'justify-start'
-              )
-            "
-          >
-            RED {{ winningState?.winner_id === "red" ? "WON" : "" }}
-          </div>
-          <div
-            v-if="
-              !winningState?.winner_id || winningState?.winner_id === 'blue'
-            "
-            :class="
-              cn(
-                'flex-1 relative flex items-center text-white font-bold',
-                winningState?.winner_id === 'blue'
-                  ? 'justify-center'
-                  : 'justify-end'
-              )
-            "
-          >
-            BLUE {{ winningState?.winner_id === "blue" ? "WON" : "" }}
-          </div>
-        </div>
-      </div>
+      <GameHeader />
 
       <div class="flex-1 flex flex-col">
         <h1 class="text-xl">Board</h1>
@@ -61,7 +23,16 @@
       </div>
     </div>
 
-    <div class="w-1/4 min-w-[256px] max-w-[360px] bg-gray-300">Game Info</div>
+    <div
+      class="w-full md:w-1/4 md:min-w-[256px] md:max-w-[360px] p-4 flex flex-col gap-4"
+    >
+      <GameLogs :logs="activeGame?.logs" />
+
+      <GameControl
+        v-on:start-game="onStartGame"
+        @restart-game="onRestartGame"
+      />
+    </div>
   </div>
 </template>
 
@@ -70,7 +41,6 @@ import { cn, generateWinCombinations, isWinningWithMoves } from "@/lib/utils";
 import type {
   Game,
   GameMove,
-  GamePlayer,
   GameState,
   MoveCoordinate,
   WinningCombination,
@@ -78,7 +48,10 @@ import type {
 import GameBoard from "@/components/game/GameBoard.vue";
 import { execQuery } from "@/lib/http/exec-query";
 import ky from "ky";
-import { GAME_MUTATIONS } from "@/state/game.mutation";
+import { createGamePlaceholder, GAME_MUTATIONS } from "@/state/game.module";
+import GameHeader from "@/components/game/GameHeader.vue";
+import GameLogs from "@/components/game/GameLogs.vue";
+import GameControl from "@/components/game/GameControl.vue";
 
 type User = {
   id: number;
@@ -87,7 +60,7 @@ type User = {
 };
 
 export default {
-  components: { GameBoard },
+  components: { GameControl, GameLogs, GameHeader, GameBoard },
   methods: {
     cn,
     onCellCheck([rowIndex, cellIndex]: MoveCoordinate): void {
@@ -102,10 +75,17 @@ export default {
       const gameMove: GameMove = {
         owner_id: currentUser.id,
         coordinate: [rowIndex, cellIndex],
+        timestamp: new Date().toISOString(),
       };
-      console.log(gameMove);
       // update the game logs
       this.$store.commit(GAME_MUTATIONS.setMove, gameMove);
+    },
+    onStartGame() {
+      console.log("start game!");
+      this.$store.commit(GAME_MUTATIONS.startPlaying);
+    },
+    onRestartGame() {
+      this.$store.commit(GAME_MUTATIONS.restart);
     },
   },
   data() {
@@ -145,21 +125,7 @@ export default {
     },
   },
   beforeCreate(this) {
-    const users: [GamePlayer, GamePlayer] = [
-      { id: "red", name: "Red Player" },
-      { id: "blue", name: "Blue Player" },
-    ];
-    const game: Game = {
-      name: "new game!",
-      colMode: 3,
-      moves: [],
-      logs: [],
-      winMode: "until-win",
-      status: "waiting",
-      players: users,
-      boardState: [],
-    };
-    this.$store.commit(GAME_MUTATIONS.create, game);
+    this.$store.commit(GAME_MUTATIONS.create, createGamePlaceholder());
   },
   mounted() {
     execQuery({
@@ -174,8 +140,6 @@ export default {
         this.users = users;
       },
     });
-
-    this.$store.commit(GAME_MUTATIONS.startPlaying);
   },
 };
 </script>
