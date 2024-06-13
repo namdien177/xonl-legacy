@@ -20,6 +20,7 @@ export type GamePlayer = {
 export type GameWinMode = "until-win" | "normal";
 
 export type Game = {
+  id: string;
   name: string;
   players: [GamePlayer, GamePlayer];
   status: "waiting" | "playing" | "finished";

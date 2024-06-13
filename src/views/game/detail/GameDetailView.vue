@@ -45,13 +45,13 @@ import type {
   MoveCoordinate,
   WinningCombination,
 } from "@/lib/types/game-state";
-import GameBoard from "@/components/game/GameBoard.vue";
+import GameBoard from "@/views/game/detail/_components/GameBoard.vue";
 import { execQuery } from "@/lib/http/exec-query";
 import ky from "ky";
 import { createGamePlaceholder, GAME_MUTATIONS } from "@/state/game.module";
-import GameHeader from "@/components/game/GameHeader.vue";
-import GameLogs from "@/components/game/GameLogs.vue";
-import GameControl from "@/components/game/GameControl.vue";
+import GameHeader from "@/views/game/detail/_components/GameHeader.vue";
+import GameLogs from "@/views/game/detail/_components/GameLogs.vue";
+import GameControl from "@/views/game/detail/_components/GameControl.vue";
 
 type User = {
   id: number;

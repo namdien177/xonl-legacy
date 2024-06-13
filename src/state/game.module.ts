@@ -33,7 +33,10 @@ export const createGamePlaceholder = (): Game => {
     { id: "blue", name: "Blue Player" },
   ];
 
+  const randomIds = Math.floor(Math.random() * 2);
+
   return {
+    id: `game-${randomIds}`,
     name: "new game!",
     colMode: 3,
     moves: [],

@@ -16,10 +16,34 @@ const router = new VueRouter({
     {
       path: "/game",
       name: "game",
+      component: () => import("../views/game/GameRouteContainer.vue"),
       // route level code-splitting
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
-      component: () => import("../views/GameView.vue"),
+      children: [
+        {
+          path: "",
+          name: "game-list",
+          component: () => import("../views/game/GameView.vue"),
+        },
+        {
+          path: "room",
+          redirect: {
+            name: "game-list",
+            path: "",
+          },
+        },
+        {
+          path: "room/:id",
+          name: "game-room-detail",
+          component: () => import("../views/game/detail/GameDetailView.vue"),
+        },
+        {
+          path: "create",
+          name: "create-game",
+          component: () => import("../views/game/create/GameCreateView.vue"),
+        },
+      ],
     },
   ],
 });
