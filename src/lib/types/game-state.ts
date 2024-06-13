@@ -1,13 +1,33 @@
-import type { CellCoordinate } from "@/lib/utils";
+export type MoveCoordinate = [row: number, col: number];
 
-export type BoardCellState = {
+export type WinningCombination = Array<MoveCoordinate>;
+
+export type GameState = Array<Array<GamePlayer | null>>;
+
+export type GameMove = {
   owner_id: string;
-  icon?: string;
+  coordinate: MoveCoordinate;
 };
 
-export type GameState = Array<Array<BoardCellState | null>>;
+export type GameLogs = Array<GameMove>;
 
-export type GameLogs = Array<{
-  owner_id: "red" | "blue";
-  coordinate: CellCoordinate;
-}>;
+export type GamePlayer = {
+  id: string;
+  name: string;
+};
+
+export type GameWinMode = "until-win" | "normal";
+
+export type Game = {
+  name: string;
+  players: [GamePlayer, GamePlayer];
+  status: "waiting" | "playing" | "finished";
+  winMode: GameWinMode;
+  colMode: number;
+  winner?: GamePlayer;
+  winCombination?: WinningCombination;
+  currentTurn?: GamePlayer;
+  boardState: GameState;
+  moves: GameLogs;
+  logs: GameLogs;
+};

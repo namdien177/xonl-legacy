@@ -1,22 +1,24 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { GameState } from "@/lib/types/game-state";
+import type {
+  GameState,
+  MoveCoordinate,
+  WinningCombination,
+} from "@/lib/types/game-state";
+import type { MakeWinnerProps } from "@/state/game.mutation";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export type CellCoordinate = [row: number, col: number];
-export type WinCondition = Array<CellCoordinate>;
-
 export function generateWinCombinations(size: number) {
   // Generate horizontal and vertical win combinations
-  const horizontal: Array<WinCondition> = [];
-  const vertical: Array<WinCondition> = [];
+  const horizontal: Array<WinningCombination> = [];
+  const vertical: Array<WinningCombination> = [];
 
   for (let rowIndex = 0; rowIndex < size; rowIndex++) {
     for (let colIndex = 0; colIndex < size; colIndex++) {
-      const cell: CellCoordinate = [rowIndex, colIndex];
+      const cell: MoveCoordinate = [rowIndex, colIndex];
 
       if (!horizontal[rowIndex]) {
         horizontal[rowIndex] = [];
@@ -37,8 +39,8 @@ export function generateWinCombinations(size: number) {
   const diagonalRightLeft = [];
 
   for (let xyCoordinate = 0; xyCoordinate < size; xyCoordinate++) {
-    const leftEndCell: CellCoordinate = [xyCoordinate, xyCoordinate];
-    const rightEndCell: CellCoordinate = [
+    const leftEndCell: MoveCoordinate = [xyCoordinate, xyCoordinate];
+    const rightEndCell: MoveCoordinate = [
       xyCoordinate,
       size - xyCoordinate - 1,
     ];
@@ -52,17 +54,17 @@ export function generateWinCombinations(size: number) {
 
 export function isWinningWithMoves(
   moves: GameState,
-  winCombinations: WinCondition[]
-) {
+  winCombinations: WinningCombination[]
+): MakeWinnerProps | null {
   // check if there is a wining combination match and who match it
-  let winner: string | null = null;
-  let combination: WinCondition | null = null;
+  let winner_id: string | null = null;
+  let combination: WinningCombination | null = null;
 
   for (const winCombination of winCombinations) {
     let currentOwner = null;
     for (const cells of winCombination) {
       const [row, cell] = cells;
-      const cellOwner = moves[row]?.[cell]?.owner_id;
+      const cellOwner = moves[row]?.[cell]?.id;
       if (!cellOwner) {
         currentOwner = null;
         break;
@@ -77,15 +79,15 @@ export function isWinningWithMoves(
     }
 
     if (currentOwner) {
-      winner = currentOwner;
+      winner_id = currentOwner;
       combination = winCombination;
       break;
     }
   }
 
-  if (!winner || !combination) {
+  if (!winner_id || !combination) {
     return null;
   }
 
-  return { winner, combination };
+  return { winner_id, winCombination: combination };
 }

@@ -6,37 +6,39 @@
           :class="
             cn('flex w-full rounded-lg p-4', {
               'from-red-600 bg-gradient-to-r to-blue-600':
-                winningState === null,
-              'bg-red-600': winningState?.winner === 'red',
-              'bg-blue-600': winningState?.winner === 'blue',
+                !activeGame?.winner?.id,
+              'bg-red-600': activeGame?.winner?.id === 'red',
+              'bg-blue-600': activeGame?.winner?.id === 'blue',
             })
           "
         >
           <div
-            v-if="!winningState?.winner || winningState?.winner === 'red'"
+            v-if="!winningState?.winner_id || winningState?.winner_id === 'red'"
             :class="
               cn(
                 'flex-1 relative flex items-center text-white font-bold',
-                winningState?.winner === 'red'
+                winningState?.winner_id === 'red'
                   ? 'justify-center'
                   : 'justify-start'
               )
             "
           >
-            RED {{ winningState?.winner === "red" ? "WON" : "" }}
+            RED {{ winningState?.winner_id === "red" ? "WON" : "" }}
           </div>
           <div
-            v-if="!winningState?.winner || winningState?.winner === 'blue'"
+            v-if="
+              !winningState?.winner_id || winningState?.winner_id === 'blue'
+            "
             :class="
               cn(
                 'flex-1 relative flex items-center text-white font-bold',
-                winningState?.winner === 'blue'
+                winningState?.winner_id === 'blue'
                   ? 'justify-center'
                   : 'justify-end'
               )
             "
           >
-            BLUE {{ winningState?.winner === "blue" ? "WON" : "" }}
+            BLUE {{ winningState?.winner_id === "blue" ? "WON" : "" }}
           </div>
         </div>
       </div>
@@ -45,8 +47,9 @@
         <h1 class="text-xl">Board</h1>
         {{ winningState }}
         <GameBoard
-          :col-number="colNumber"
-          :game-state="gameState"
+          v-if="activeGame"
+          :col-number="activeGame.colMode"
+          :game-state="activeGame.boardState"
           @cell-selected="onCellCheck"
         ></GameBoard>
         <p v-if="usersLoading">Loading...</p>
@@ -63,17 +66,19 @@
 </template>
 
 <script lang="ts">
-import {
-  type CellCoordinate,
-  cn,
-  generateWinCombinations,
-  isWinningWithMoves,
-  type WinCondition,
-} from "@/lib/utils";
-import type { GameLogs, GameState } from "@/lib/types/game-state";
+import { cn, generateWinCombinations, isWinningWithMoves } from "@/lib/utils";
+import type {
+  Game,
+  GameMove,
+  GamePlayer,
+  GameState,
+  MoveCoordinate,
+  WinningCombination,
+} from "@/lib/types/game-state";
 import GameBoard from "@/components/game/GameBoard.vue";
 import { execQuery } from "@/lib/http/exec-query";
 import ky from "ky";
+import { GAME_MUTATIONS } from "@/state/game.mutation";
 
 type User = {
   id: number;
@@ -85,68 +90,76 @@ export default {
   components: { GameBoard },
   methods: {
     cn,
-    onCellCheck([rowIndex, cellIndex]: CellCoordinate): void {
-      const row = this.gameState[rowIndex];
-      if (!row) {
-        this.$set(this.gameState, rowIndex, []);
+    onCellCheck([rowIndex, cellIndex]: MoveCoordinate): void {
+      if (
+        !this.activeGame ||
+        this.activeGame.status !== "playing" ||
+        !this.activeGame.currentTurn
+      ) {
+        return;
       }
-
-      const cell = this.gameState[rowIndex];
-      // Prevent overwriting cell
-      if (cell[cellIndex]) return;
-
-      this.$set(this.gameState[rowIndex], cellIndex, {
-        owner_id: this.ownerTurn,
-      });
-      this.gameLogs.push({
-        owner_id: this.ownerTurn,
+      const currentUser = this.activeGame.currentTurn;
+      const gameMove: GameMove = {
+        owner_id: currentUser.id,
         coordinate: [rowIndex, cellIndex],
-      });
-      // flip the turn
-      this.ownerTurn = this.ownerTurn === "red" ? "blue" : "red";
+      };
+      console.log(gameMove);
+      // update the game logs
+      this.$store.commit(GAME_MUTATIONS.setMove, gameMove);
     },
   },
   data() {
     return {
-      colNumber: 3,
-      ownerTurn: "red" as "red" | "blue",
-      gameState: [] as GameState,
-      gameLogs: [] as GameLogs,
       users: [] as User[],
       usersLoading: false,
     };
   },
   computed: {
-    winCombinations(): Array<WinCondition> {
-      return generateWinCombinations(this.colNumber);
+    activeGame(): Game | null {
+      return this.$store.state.playingGame;
+    },
+    boardState(): GameState {
+      if (!this.$store.state.playingGame) {
+        return [];
+      }
+      return this.$store.state.playingGame.boardState;
+    },
+    winCombinations(): Array<WinningCombination> {
+      if (!this.$store.state.playingGame) {
+        return [];
+      }
+      return generateWinCombinations(this.$store.state.playingGame.colMode);
     },
     winningState() {
-      const moves = this.gameState;
+      const moves = this.boardState;
       const combinations = this.winCombinations;
-      const winInfo = isWinningWithMoves(moves, combinations);
-      if (winInfo?.winner) {
-        console.log(winInfo);
-      }
-      return winInfo;
+      return isWinningWithMoves(moves, combinations);
     },
   },
   watch: {
-    "gameLogs.length"(moveLength) {
-      // the limit is n^2-1 moves
-      const limitMoveLength = this.colNumber ** 2 - 1;
-      if (moveLength <= limitMoveLength) {
+    winningState(state: ReturnType<typeof isWinningWithMoves>) {
+      if (!state) {
         return;
       }
-
-      // remove the last move from the game state and log
-      const lastMove = this.gameLogs.shift();
-      if (!lastMove) {
-        return;
-      }
-
-      const [rowIndex, cellIndex] = lastMove.coordinate;
-      this.$set(this.gameState[rowIndex], cellIndex, null);
+      this.$store.commit(GAME_MUTATIONS.end, state);
     },
+  },
+  beforeCreate(this) {
+    const users: [GamePlayer, GamePlayer] = [
+      { id: "red", name: "Red Player" },
+      { id: "blue", name: "Blue Player" },
+    ];
+    const game: Game = {
+      name: "new game!",
+      colMode: 3,
+      moves: [],
+      logs: [],
+      winMode: "until-win",
+      status: "waiting",
+      players: users,
+      boardState: [],
+    };
+    this.$store.commit(GAME_MUTATIONS.create, game);
   },
   mounted() {
     execQuery({
@@ -161,6 +174,8 @@ export default {
         this.users = users;
       },
     });
+
+    this.$store.commit(GAME_MUTATIONS.startPlaying);
   },
 };
 </script>

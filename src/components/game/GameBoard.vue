@@ -12,7 +12,7 @@
           <td
             v-for="(_, cellIndex) in row"
             :key="`${rowIndex}-${cellIndex}-${
-              gameState[rowIndex]?.[cellIndex]?.owner_id ?? 'uncheck'
+              gameState[rowIndex]?.[cellIndex]?.id ?? 'uncheck'
             }`"
             @click="onCellClick(rowIndex, cellIndex)"
             :style="{
@@ -21,9 +21,9 @@
             :class="
               cn('border p-4 align-middle text-center', {
                 'bg-blue-500 text-white':
-                  gameState[rowIndex]?.[cellIndex]?.owner_id === 'blue',
+                  gameState[rowIndex]?.[cellIndex]?.id === 'blue',
                 'bg-red-500 text-white':
-                  gameState[rowIndex]?.[cellIndex]?.owner_id === 'red',
+                  gameState[rowIndex]?.[cellIndex]?.id === 'red',
               })
             "
           >
@@ -36,10 +36,10 @@
 </template>
 
 <script lang="ts">
-import type { GameState } from "@/lib/types/game-state";
+import type { MoveCoordinate, GameState } from "@/lib/types/game-state";
 import type { PropType } from "vue";
 import { defineComponent } from "vue";
-import { type CellCoordinate, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const generateStateCellState = (gridLength: number): GameState => {
   const state = [];
@@ -87,7 +87,7 @@ export default defineComponent({
     },
   },
   emits: {
-    "cell-selected"([rowIndex, cellIndex]: CellCoordinate): boolean {
+    "cell-selected"([rowIndex, cellIndex]: MoveCoordinate): boolean {
       return rowIndex >= 0 && cellIndex >= 0;
     },
   },
