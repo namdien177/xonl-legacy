@@ -35,7 +35,7 @@ export default {
   methods: { buttonVariants },
   computed: {
     activeGame() {
-      return this.$store.state.playingGame;
+      return this.$store.state.playingGame.activeGame;
     },
   },
 };

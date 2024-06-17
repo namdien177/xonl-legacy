@@ -2,10 +2,10 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type {
   GameState,
+  MakeGameWinner,
   MoveCoordinate,
   WinningCombination,
 } from "@/lib/types/game-state";
-import type { MakeWinnerProps } from "@/state/game.module";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -55,7 +55,7 @@ export function generateWinCombinations(size: number) {
 export function isWinningWithMoves(
   moves: GameState,
   winCombinations: WinningCombination[]
-): MakeWinnerProps | null {
+): MakeGameWinner | null {
   // check if there is a wining combination match and who match it
   let winner_id: string | null = null;
   let combination: WinningCombination | null = null;

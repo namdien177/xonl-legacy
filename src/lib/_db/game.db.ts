@@ -4,9 +4,22 @@ const GameStorage = new Map<string, Game>();
 
 export const GameDB = {
   getGame: (gameId: string) => {
-    return GameStorage.get(gameId);
+    return new Promise<{
+      data: Game | null;
+    }>((resolve) => {
+      setTimeout(
+        () => {
+          const game = GameStorage.get(gameId);
+          resolve({
+            data: game ?? null,
+          });
+        },
+        // random from 100-500ms
+        Math.floor(Math.random() * 400) + 100
+      );
+    });
   },
-  setGame: (game: Game) => {
+  setGame: async (game: Game) => {
     GameStorage.set(game.id, game);
   },
   deleteGame: (gameId: string) => {
