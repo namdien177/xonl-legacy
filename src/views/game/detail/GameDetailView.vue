@@ -2,7 +2,9 @@
   <div
     class="w-full h-[calc(100vh-3.5rem-1px)] flex flex-col md:flex-row gap-4"
   >
-    <div class="flex-1 flex flex-col p-4 gap-4 overflow-auto relative">
+    <div
+      class="flex-1 flex flex-col min-h-[100dvh-120px] p-4 gap-4 overflow-auto relative"
+    >
       <GameHeader />
 
       <div class="flex-1 flex flex-col">
