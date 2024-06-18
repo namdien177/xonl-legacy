@@ -84,10 +84,16 @@
       <button
         :class="buttonVariants({ variant: 'default' })"
         type="submit"
-        :disabled="invalid"
+        :disabled="invalid || isCreatingGame"
       >
-        Create room
+        <span class="flex items-center gap-2" v-if="isCreatingGame">
+          <Icon icon="line-md:loading-loop" />
+          <span>Creating...</span>
+        </span>
+        <span v-else>Create room</span>
       </button>
+
+      <span class="text-red-500">{{ isCreateError }}</span>
     </form>
   </ValidationObserver>
 </template>
@@ -97,11 +103,19 @@ import { inputVariants } from "@/components/ui/input";
 import { ValidationObserver, ValidationProvider } from "vee-validate";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import type { Game, GamePlayer } from "@/lib/types/game-state";
+import type {
+  Game,
+  GameCreatePayload,
+  GamePlayer,
+} from "@/lib/types/game-state";
 import { defineComponent } from "vue";
+import { Icon } from "@iconify/vue2";
+import { STATE_MODULE } from "@/state";
+import type { GameCreateState } from "@/state/game-module";
+import { GameActions } from "@/state/game-module/actions";
 
 export default defineComponent({
-  components: { ValidationProvider, ValidationObserver },
+  components: { ValidationProvider, ValidationObserver, Icon },
   data() {
     return {
       hasSecondPlayer: false,
@@ -120,25 +134,24 @@ export default defineComponent({
     toggleSecondPlayer(value: boolean) {
       this.hasSecondPlayer = value;
     },
-    onSubmit() {
+    async onSubmit() {
       let playerOne: GamePlayer | null = null;
       let playerTwo: GamePlayer | null = null;
-      if (this.playerOneId && this.playerOne) {
-        playerOne = {
-          id: this.playerOneId,
-          name: this.playerOne,
-        };
-      } else {
+      if (!this.playerOneId || !this.playerOne) {
         return;
       }
+      playerOne = {
+        id: this.playerOneId,
+        name: this.playerOne,
+      };
+
       if (this.playerTwoId && this.playerTwo) {
         playerTwo = {
           id: this.playerTwoId,
           name: this.playerTwo,
         };
       }
-      const formData: Game = {
-        id: `${this.name}-${Math.floor(Math.random() * 10000)}`,
+      const formData: GameCreatePayload = {
         name: this.name,
         players: [playerOne, playerTwo].filter(Boolean) as [
           GamePlayer,
@@ -146,15 +159,24 @@ export default defineComponent({
         ],
         colMode: this.colMode,
         status: "waiting",
-        logs: [],
-        boardState: [],
-        moves: [],
         winMode: this.winMode,
       };
-      console.log(formData);
+      await this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.createGame}`,
+        formData
+      );
     },
   },
   computed: {
+    creationState(): GameCreateState {
+      return this.$store.state[STATE_MODULE.GAME].createState;
+    },
+    isCreatingGame(): boolean {
+      return !!this.creationState?.isSubmitting;
+    },
+    isCreateError(): string | null {
+      return this.creationState?.error ?? null;
+    },
     playerOneId() {
       const playerOne = this.playerOne;
       if (!playerOne) {

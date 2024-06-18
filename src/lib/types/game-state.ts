@@ -19,6 +19,8 @@ export type GamePlayer = {
 
 export type GameWinMode = "until-win" | "normal";
 
+export type GamePlayers = [GamePlayer, GamePlayer];
+
 export type Game = {
   id: string;
   name: string;
@@ -33,6 +35,11 @@ export type Game = {
   moves: GameLogs;
   logs: GameLogs;
 };
+
+export type GameCreatePayload = Omit<
+  Game,
+  "id" | "logs" | "moves" | "boardState"
+>;
 
 export type MakeGameWinner = {
   winner_id: string;

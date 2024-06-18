@@ -4,9 +4,13 @@ import GameModule from "@/state/game-module";
 
 Vue.use(Vuex);
 
+export const STATE_MODULE = {
+  GAME: "playingGame",
+} as const;
+
 const GLOBAL_STATE = new Vuex.Store({
   modules: {
-    playingGame: GameModule,
+    [STATE_MODULE.GAME]: GameModule,
   },
   strict: true,
 });

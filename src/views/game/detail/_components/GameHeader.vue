@@ -18,7 +18,7 @@
           )
         "
       >
-        {{ players[0].name ?? "Player 1" }}
+        {{ players[0]?.name ?? "Player 1" }}
         {{ isFirstPlayerWon ? "WON" : "" }}
       </div>
       <div
@@ -30,7 +30,7 @@
           )
         "
       >
-        {{ players[1].name ?? "Player 2" }}
+        {{ players[1]?.name ?? "Player 2" }}
         {{ isSecondPlayerWon ? "WON" : "" }}
       </div>
     </div>
@@ -38,32 +38,41 @@
 </template>
 
 <script lang="ts">
-import type { GamePlayer } from "@/lib/types/game-state";
+import type { Game, GamePlayer } from "@/lib/types/game-state";
 import { cn } from "@/lib/utils";
 import { defineComponent } from "vue";
+import { STATE_MODULE } from "@/state";
+import type { GameModuleState } from "@/state/game-module";
 
 export default defineComponent({
   methods: { cn },
   computed: {
-    playingGame() {
-      return this.$store.state.playingGame;
+    gameStateModule(): GameModuleState {
+      return this.$store.state[STATE_MODULE.GAME];
     },
-    players(): [GamePlayer, GamePlayer] {
-      return (
-        this.playingGame?.players ?? [
-          { id: "red", name: "Player 1" },
-          { id: "blue", name: "Player 2" },
-        ]
-      );
+    playingGame(): Game | null {
+      return this.gameStateModule.activeGame;
+    },
+    players(): [] | [GamePlayer, GamePlayer | null] {
+      if (!this.playingGame) {
+        return [];
+      }
+      return this.playingGame.players;
     },
     winner(): GamePlayer | null {
       return this.playingGame?.winner ?? null;
     },
     isFirstPlayerWon(): boolean {
-      return this.winner?.id === this.players[0].id;
+      if (!this.winner || !this.players[0]) {
+        return false;
+      }
+      return this.winner.id === this.players[0].id;
     },
     isSecondPlayerWon(): boolean {
-      return this.winner?.id === this.players[1].id;
+      if (!this.winner || !this.players[1]) {
+        return false;
+      }
+      return this.winner.id === this.players[1].id;
     },
   },
 });

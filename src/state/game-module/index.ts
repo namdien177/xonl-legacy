@@ -1,5 +1,6 @@
 import type {
   Game,
+  GameCreatePayload,
   GameMove,
   GamePlayer,
   MakeGameWinner,
@@ -10,51 +11,123 @@ import { updateMove } from "@/state/game-module/move.strategy";
 import { GameActions } from "@/state/game-module/actions";
 import { createGamePlaceholder } from "@/state/game-module/factory";
 import { GameDB } from "@/lib/_db/game.db";
+import { GameMutations } from "@/state/game-module/mutations";
+import router from "@/router";
 
-type GameModuleState = {
+export type GameCreateState =
+  | null
+  | {
+      message: string;
+      data: Game;
+      error: undefined;
+      isSubmitting: false;
+    }
+  | {
+      message: undefined;
+      data: undefined;
+      error: string;
+      isSubmitting: false;
+    }
+  | {
+      message: undefined;
+      data: undefined;
+      error: undefined;
+      isSubmitting: true;
+    };
+
+export type GameModuleState = {
   activeGame: Game | null;
   activeGameLoading: boolean;
+
+  createState: GameCreateState;
 };
 
 type GameModuleMutations = {
-  setGame: (state: GameModuleState, game: Game) => void;
-  setPlayer: (state: GameModuleState, player: GamePlayer) => void;
-  setPlaying: (state: GameModuleState) => void;
-  setMove: (state: GameModuleState, move: GameMove) => void;
-  setEnd: (state: GameModuleState, props: MakeGameWinner) => void;
+  // API mutations
+  [GameMutations.setIsFetchingGame]: (state: GameModuleState) => void;
+  [GameMutations.setFetchingSuccess]: (
+    state: GameModuleState,
+    game: Game
+  ) => void;
+  [GameMutations.setFetchingError]: (state: GameModuleState) => void;
+  // app mutations
+  [GameMutations.setGame]: (state: GameModuleState, game: Game) => void;
+  [GameMutations.addSecondPlayer]: (
+    state: GameModuleState,
+    player: GamePlayer
+  ) => void;
+  [GameMutations.setPlaying]: (state: GameModuleState) => void;
+  [GameMutations.doMove]: (state: GameModuleState, move: GameMove) => void;
+  [GameMutations.setGameWinner]: (
+    state: GameModuleState,
+    props: MakeGameWinner
+  ) => void;
 };
 
 const GameModule: Module<GameModuleState, GameModuleMutations> = {
-  state: () => ({
+  namespaced: true,
+  state: (): GameModuleState => ({
     activeGame: null as Game | null,
     activeGameLoading: false,
+    createState: null,
   }),
   mutations: {
-    isFetchingGame(state) {
+    [GameMutations.resetCreateState](state) {
+      state.createState = null;
+    },
+    [GameMutations.createGameLoading](state) {
+      state.createState = {
+        message: undefined,
+        data: undefined,
+        error: undefined,
+        isSubmitting: true,
+      };
+    },
+    [GameMutations.createGameSuccess](
+      state,
+      response: {
+        data: Game;
+        message: string;
+      }
+    ) {
+      state.createState = {
+        message: response.message,
+        data: response.data,
+        error: undefined,
+        isSubmitting: false,
+      };
+    },
+    [GameMutations.createGameError](state, error: string) {
+      state.createState = {
+        message: undefined,
+        data: undefined,
+        error,
+        isSubmitting: false,
+      };
+    },
+    [GameMutations.setIsFetchingGame](state) {
       state.activeGameLoading = true;
     },
-    fetchGameSuccess(state, game: Game) {
+    [GameMutations.setFetchingSuccess](state, game: Game) {
+      console.log(game);
       state.activeGame = game;
       state.activeGameLoading = false;
     },
-    fetchGameError(state) {
+    [GameMutations.setFetchingError](state) {
       state.activeGame = null;
       state.activeGameLoading = false;
     },
-    setGame(state, game: Game) {
-      state.activeGame = {
-        ...game,
-        status: "waiting",
-      };
+    [GameMutations.setGame](state, game: Game) {
+      state.activeGame = game;
     },
-    setPlayer(state, player: GamePlayer) {
+    [GameMutations.addSecondPlayer](state, player: GamePlayer) {
       if (!state.activeGame) {
         return;
       }
       // set the joined player as the second player
       Vue.set(state.activeGame.players, 1, player);
     },
-    setPlaying(state) {
+    [GameMutations.setPlaying](state) {
       if (!state.activeGame) {
         return;
       }
@@ -67,7 +140,7 @@ const GameModule: Module<GameModuleState, GameModuleMutations> = {
       // Set the first player as the current turn
       Vue.set(state.activeGame, "currentTurn", state.activeGame.players[0]);
     },
-    setMove(state, move: GameMove) {
+    [GameMutations.doMove](state, move: GameMove) {
       if (!state.activeGame) {
         return;
       }
@@ -81,7 +154,10 @@ const GameModule: Module<GameModuleState, GameModuleMutations> = {
         Vue.set(state.activeGame, key, value);
       }
     },
-    setEnd(state, { winner_id, winCombination }: MakeGameWinner) {
+    [GameMutations.setGameWinner](
+      state,
+      { winner_id, winCombination }: MakeGameWinner
+    ) {
       if (!state.activeGame) {
         return;
       }
@@ -97,62 +173,71 @@ const GameModule: Module<GameModuleState, GameModuleMutations> = {
     },
   },
   actions: {
-    async [GameActions.fetchGame](context, gameId: string) {
-      context.commit("isFetchingGame");
-      const gameFromDB = await GameDB.getGame(gameId);
-      if (!gameFromDB) {
-        context.commit("fetchGameError");
+    async [GameActions.createGame](context, payload: GameCreatePayload) {
+      context.commit(GameMutations.createGameLoading);
+      const game = await new Promise<Game>((resolve) =>
+        setTimeout(async () => {
+          const result = await GameDB.setGame(payload);
+          resolve(result);
+        }, 1000)
+      );
+      if (!game) {
+        context.commit(GameMutations.createGameError, "Failed to create game");
         return;
       }
-      context.commit("fetchGameSuccess", gameFromDB);
+      context.commit(GameMutations.createGameSuccess, {
+        data: game,
+        message: "Game created successfully",
+      });
+      void router.push({
+        name: "game-room-detail",
+        params: { id: game.id },
+      });
     },
-    [GameActions.create](context, game: Game) {
-      context.commit("setGame", game);
+    async [GameActions.fetchGame](context, gameId: string) {
+      context.commit(GameMutations.setIsFetchingGame);
+      const gameFromDB = await GameDB.getGame(gameId);
+      if (!gameFromDB) {
+        context.commit(GameMutations.setFetchingError);
+        return;
+      }
+      context.commit(GameMutations.setFetchingSuccess, gameFromDB.data);
     },
     [GameActions.invitePlayer](context, player: GamePlayer) {
       // TODO: implement the logic to invite the player
-      context.commit("setPlayer", player);
+      context.commit(GameMutations.addSecondPlayer, player);
     },
     [GameActions.joinGame](context, player: GamePlayer) {
       // TODO: implement the logic to join the game
-      context.commit("setPlayer", player);
+      context.commit(GameMutations.addSecondPlayer, player);
     },
     [GameActions.startPlaying](context) {
-      context.commit("setPlaying");
+      context.commit(GameMutations.setPlaying);
     },
-    [GameActions.firstPlayerMove](context, move: GameMove) {
-      context.commit("setMove", move);
-    },
-    [GameActions.secondPlayerMove](context, move: GameMove) {
-      context.commit("setMove", move);
+    [GameActions.playerMove](context, move: GameMove) {
+      context.commit(GameMutations.doMove, move);
     },
     [GameActions.gameIsDecided](context, props: MakeGameWinner) {
-      context.commit("setEnd", props);
+      context.commit(GameMutations.setGameWinner, props);
     },
-    [GameActions.restartGame](context) {
+    async [GameActions.restartGame](context) {
       const currentGame = context.state.activeGame;
+      let payload: GameCreatePayload;
       if (!currentGame) {
         // create new game
-        const newGame = createGamePlaceholder();
-        context.commit("setGame", newGame);
+        await router.push({ name: "create-game" });
         return;
+      } else {
+        payload = {
+          winMode: currentGame.winMode,
+          colMode: currentGame.colMode,
+          players: currentGame.players,
+          name: currentGame.name,
+          status: "waiting",
+        };
       }
 
-      // clone the current game
-      const newGame = { ...currentGame };
-      // reset the board state
-      newGame.boardState = [];
-      // reset the moves
-      newGame.moves = [];
-      // reset the logs
-      newGame.logs = [];
-      // reset the winner
-      newGame.winner = undefined;
-      newGame.winCombination = undefined;
-      // reset the current turn
-      newGame.currentTurn = undefined;
-
-      context.commit("setGame", newGame);
+      await context.dispatch(GameActions.createGame, payload);
     },
   },
 };

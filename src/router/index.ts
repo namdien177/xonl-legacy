@@ -2,7 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import HomeView from "../views/HomeView.vue";
 import { GameDB } from "@/lib/_db/game.db";
-import { GameActions } from "@/state/game-module/actions";
+import { execQuery } from "@/lib/http/exec-query";
 
 Vue.use(VueRouter);
 
@@ -42,16 +42,20 @@ const router = new VueRouter({
             const { id } = to.params;
 
             // fetch game data
-            const game = await GameDB.getGame(id);
-            if (!game || !game.data) {
-              next({ name: "game-list" });
-              return;
-            }
-            return next((vm) => {
-              vm.$store.dispatch(
-                `playingGame/${GameActions.create}`,
-                game.data
-              );
+            await execQuery({
+              queryFn: () => GameDB.getGame(id),
+              onResolve(result) {
+                console.log(result);
+                if (!result || !result.data) {
+                  return next({ name: "game-list" });
+                }
+
+                return next();
+              },
+              onReject(error) {
+                console.error("Error fetching game", error);
+                return next({ name: "game-list" });
+              },
             });
           },
         },

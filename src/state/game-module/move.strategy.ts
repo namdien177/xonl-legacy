@@ -1,11 +1,21 @@
-import type { Game, GameMove, GamePlayer } from "@/lib/types/game-state";
+import type {
+  Game,
+  GameMove,
+  GamePlayer,
+  GamePlayers,
+} from "@/lib/types/game-state";
 import Vue from "vue";
 
-const findPlayerById = (
-  players: [GamePlayer | null, GamePlayer | null],
-  id: string
-) => {
+const findPlayerById = (players: GamePlayers, id: string) => {
   return players.find((player) => player?.id === id) as GamePlayer | undefined;
+};
+
+const flipPlayer = (players: GamePlayers, currentId: string) => {
+  const [player1, player2] = players;
+  if (player1.id === currentId) {
+    return player2;
+  }
+  return player1;
 };
 
 export const updateMove = (move: GameMove, state: Game) => {
@@ -27,7 +37,7 @@ const updateMoveUntilWin = (
 ): null | Partial<Game> => {
   const board = state.boardState;
   const [row, col] = move.coordinate;
-  const user = findPlayerById(state.players, move.owner_id);
+  const user = findPlayerById(state.players as GamePlayers, move.owner_id);
 
   if (!user) {
     return null;
@@ -41,7 +51,7 @@ const updateMoveUntilWin = (
   const maxMovesLength = state.colMode * state.colMode;
   const currentMovesLength = state.moves.length;
   const isNormalMove = currentMovesLength < maxMovesLength - 2;
-  const currentTurn = findPlayerById(state.players, move.owner_id);
+  const currentTurn = flipPlayer(state.players as GamePlayers, move.owner_id);
 
   if (isNormalMove) {
     // update the game board
@@ -87,7 +97,7 @@ const updateMoveNormal = (
 ): null | Partial<Game> => {
   const board = state.boardState;
   const [row, col] = move.coordinate;
-  const user = findPlayerById(state.players, move.owner_id);
+  const user = findPlayerById(state.players as GamePlayers, move.owner_id);
 
   if (!user) {
     return null;
@@ -106,7 +116,7 @@ const updateMoveNormal = (
     return null;
   }
 
-  const currentTurn = findPlayerById(state.players, move.owner_id);
+  const currentTurn = flipPlayer(state.players as GamePlayers, move.owner_id);
 
   // update the game board
   if (!board[row]) {

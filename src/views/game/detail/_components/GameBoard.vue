@@ -20,10 +20,10 @@
             }"
             :class="
               cn('border p-4 align-middle text-center', {
-                'bg-blue-500 text-white':
-                  gameState[rowIndex]?.[cellIndex]?.id === 'blue',
                 'bg-red-500 text-white':
-                  gameState[rowIndex]?.[cellIndex]?.id === 'red',
+                  isMoveByPlayer(gameState[rowIndex]?.[cellIndex]?.id) === 0,
+                'bg-blue-500 text-white':
+                  isMoveByPlayer(gameState[rowIndex]?.[cellIndex]?.id) === 1,
               })
             "
           >
@@ -36,10 +36,10 @@
 </template>
 
 <script lang="ts">
-import type { MoveCoordinate, GameState } from "@/lib/types/game-state";
 import type { PropType } from "vue";
 import { defineComponent } from "vue";
 import { cn } from "@/lib/utils";
+import type { Game, GameState, MoveCoordinate } from "@/lib/types/game-state";
 
 const generateStateCellState = (gridLength: number): GameState => {
   const state = [];
@@ -68,6 +68,10 @@ export default defineComponent({
         return value.every((row) => Array.isArray(row));
       },
     },
+    players: {
+      required: true,
+      type: Array as unknown as PropType<Game["players"]>,
+    },
   },
   data() {
     return {
@@ -80,10 +84,14 @@ export default defineComponent({
       const table = this.$refs.tableRef as HTMLTableElement | undefined;
       if (!table) return;
       const tableWidth = table.offsetWidth;
-      this.cellHeight = tableWidth / this.$props.colNumber;
+      this.cellHeight = tableWidth / this.colNumber;
     },
     onCellClick(rowIndex: number, cellIndex: number): void {
       this.$emit("cell-selected", [rowIndex, cellIndex]);
+    },
+    isMoveByPlayer(id?: string): number {
+      if (!id) return -1;
+      return this.players.findIndex((player) => player?.id === id);
     },
   },
   emits: {
@@ -91,9 +99,14 @@ export default defineComponent({
       return rowIndex >= 0 && cellIndex >= 0;
     },
   },
+  watch: {
+    gameState(value: GameState) {
+      console.log(value);
+    },
+  },
   computed: {
     boardState(): GameState {
-      const colNumber = this.$props.colNumber;
+      const colNumber = this.colNumber;
       // careful about closure when using this.colNumber with arrow function
       return generateStateCellState(colNumber);
     },

@@ -11,7 +11,8 @@
         <GameBoard
           v-if="activeGame"
           :col-number="activeGame.colMode"
-          :game-state="activeGame.boardState"
+          :players="activeGame.players"
+          :game-state="boardState"
           @cell-selected="onCellCheck"
         ></GameBoard>
       </div>
@@ -46,9 +47,27 @@ import GameLogs from "@/views/game/detail/_components/GameLogs.vue";
 import GameControl from "@/views/game/detail/_components/GameControl.vue";
 import { GameActions } from "@/state/game-module/actions";
 import { defineComponent } from "vue";
+import { STATE_MODULE } from "@/state";
+import type { GameModuleState } from "@/state/game-module";
 
 export default defineComponent({
   components: { GameControl, GameLogs, GameHeader, GameBoard },
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      if ("fetchGame" in vm) {
+        const fnCb = (vm as any).fetchGame;
+        if (typeof fnCb === "function") {
+          fnCb(to.params.id);
+        }
+      }
+    });
+  },
+  // when route changes and this component is already rendered,
+  // the logic will be slightly different.
+  beforeRouteUpdate(to, from, next) {
+    this.fetchGame(to.params.id);
+    next();
+  },
   methods: {
     cn,
     onCellCheck([rowIndex, cellIndex]: MoveCoordinate): void {
@@ -66,33 +85,35 @@ export default defineComponent({
         coordinate: [rowIndex, cellIndex],
         timestamp: new Date().toISOString(),
       };
-      const isFirstPlayer =
-        activeGame.players.findIndex(
-          (player) => player?.id === currentUser.id
-        ) === 0;
-      if (isFirstPlayer) {
-        // update the game logs
-        this.$store.dispatch(GameActions.firstPlayerMove, gameMove);
-        return;
-      }
       // update the game logs
-      this.$store.dispatch(GameActions.secondPlayerMove, gameMove);
+      this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.playerMove}`,
+        gameMove
+      );
+      return;
     },
     onStartGame() {
       console.log("start game!");
-      this.$store.dispatch(GameActions.startPlaying);
+      this.$store.dispatch(`${STATE_MODULE.GAME}/${GameActions.startPlaying}`);
     },
     onRestartGame() {
       console.log("restart game!");
-      this.$store.dispatch(GameActions.restartGame);
+      this.$store.dispatch(`${STATE_MODULE.GAME}/${GameActions.restartGame}`);
     },
     fetchGame(roomId: string) {
-      this.$store.dispatch(GameActions.fetchGame, roomId);
+      console.count("fetch game");
+      this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.fetchGame}`,
+        roomId
+      );
     },
   },
   computed: {
+    gameModule(): GameModuleState {
+      return this.$store.state[STATE_MODULE.GAME];
+    },
     activeGame(): Game | null {
-      return this.$store.state.playingGame.activeGame ?? null;
+      return this.gameModule.activeGame ?? null;
     },
     boardState(): GameState {
       return this.activeGame?.boardState ?? [];
@@ -115,7 +136,10 @@ export default defineComponent({
         return;
       }
       console.log("winning state", state);
-      this.$store.dispatch(GameActions.gameIsDecided, state);
+      this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.gameIsDecided}`,
+        state
+      );
     },
   },
 });

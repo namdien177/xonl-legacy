@@ -1,6 +1,9 @@
-import type { Game } from "@/lib/types/game-state";
+import type { Game, GameCreatePayload } from "@/lib/types/game-state";
+import { createGamePlaceholder } from "@/state/game-module/factory";
 
 const GameStorage = new Map<string, Game>();
+// @ts-ignore
+window.GameStorage = GameStorage;
 
 export const GameDB = {
   getGame: (gameId: string) => {
@@ -11,7 +14,7 @@ export const GameDB = {
         () => {
           const game = GameStorage.get(gameId);
           resolve({
-            data: game ?? null,
+            data: game ? structuredClone(game) : null,
           });
         },
         // random from 100-500ms
@@ -19,8 +22,13 @@ export const GameDB = {
       );
     });
   },
-  setGame: async (game: Game) => {
-    GameStorage.set(game.id, game);
+  setGame: async (game: GameCreatePayload) => {
+    const inserted: Game = {
+      ...createGamePlaceholder(),
+      ...game,
+    };
+    GameStorage.set(inserted.id, inserted);
+    return inserted;
   },
   deleteGame: (gameId: string) => {
     GameStorage.delete(gameId);
