@@ -11,15 +11,10 @@
         <GameBoard
           v-if="activeGame"
           :col-number="activeGame.colMode"
-          :game-state="activeGame.boardState"
+          :players="activeGame.players"
+          :game-state="boardState"
           @cell-selected="onCellCheck"
         ></GameBoard>
-        <p v-if="usersLoading">Loading...</p>
-        <ul v-else>
-          <li v-for="user in users" :key="user.id">
-            {{ user.name }}
-          </li>
-        </ul>
       </div>
     </div>
 
@@ -42,104 +37,110 @@ import type {
   Game,
   GameMove,
   GameState,
+  MakeGameWinner,
   MoveCoordinate,
   WinningCombination,
 } from "@/lib/types/game-state";
 import GameBoard from "@/views/game/detail/_components/GameBoard.vue";
-import { execQuery } from "@/lib/http/exec-query";
-import ky from "ky";
-import { createGamePlaceholder, GAME_MUTATIONS } from "@/state/game.module";
 import GameHeader from "@/views/game/detail/_components/GameHeader.vue";
 import GameLogs from "@/views/game/detail/_components/GameLogs.vue";
 import GameControl from "@/views/game/detail/_components/GameControl.vue";
+import { GameActions } from "@/state/game-module/actions";
+import { defineComponent } from "vue";
+import { STATE_MODULE } from "@/state";
+import type { GameModuleState } from "@/state/game-module";
 
-type User = {
-  id: number;
-  name: string;
-  email: string;
-};
-
-export default {
+export default defineComponent({
   components: { GameControl, GameLogs, GameHeader, GameBoard },
+  beforeRouteEnter(to, from, next) {
+    next((vm) => {
+      if ("fetchGame" in vm) {
+        const fnCb = (vm as any).fetchGame;
+        if (typeof fnCb === "function") {
+          fnCb(to.params.id);
+        }
+      }
+    });
+  },
+  // when route changes and this component is already rendered,
+  // the logic will be slightly different.
+  beforeRouteUpdate(to, from, next) {
+    this.fetchGame(to.params.id);
+    next();
+  },
   methods: {
     cn,
     onCellCheck([rowIndex, cellIndex]: MoveCoordinate): void {
+      const activeGame = this.activeGame;
       if (
-        !this.activeGame ||
-        this.activeGame.status !== "playing" ||
-        !this.activeGame.currentTurn
+        !activeGame ||
+        activeGame.status !== "playing" ||
+        !activeGame.currentTurn
       ) {
         return;
       }
-      const currentUser = this.activeGame.currentTurn;
+      const currentUser = activeGame.currentTurn;
       const gameMove: GameMove = {
         owner_id: currentUser.id,
         coordinate: [rowIndex, cellIndex],
         timestamp: new Date().toISOString(),
       };
       // update the game logs
-      this.$store.commit(GAME_MUTATIONS.setMove, gameMove);
+      this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.playerMove}`,
+        gameMove
+      );
+      return;
     },
     onStartGame() {
       console.log("start game!");
-      this.$store.commit(GAME_MUTATIONS.startPlaying);
+      this.$store.dispatch(`${STATE_MODULE.GAME}/${GameActions.startPlaying}`);
     },
     onRestartGame() {
-      this.$store.commit(GAME_MUTATIONS.restart);
+      console.log("restart game!");
+      this.$store.dispatch(`${STATE_MODULE.GAME}/${GameActions.restartGame}`);
     },
-  },
-  data() {
-    return {
-      users: [] as User[],
-      usersLoading: false,
-    };
+    fetchGame(roomId: string) {
+      console.count("fetch game");
+      this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.fetchGame}`,
+        roomId
+      );
+    },
   },
   computed: {
+    gameModule(): GameModuleState {
+      return this.$store.state[STATE_MODULE.GAME];
+    },
     activeGame(): Game | null {
-      return this.$store.state.playingGame;
+      return this.gameModule.activeGame ?? null;
     },
     boardState(): GameState {
-      if (!this.$store.state.playingGame) {
-        return [];
-      }
-      return this.$store.state.playingGame.boardState;
+      return this.activeGame?.boardState ?? [];
     },
     winCombinations(): Array<WinningCombination> {
-      if (!this.$store.state.playingGame) {
+      if (!this.activeGame) {
         return [];
       }
-      return generateWinCombinations(this.$store.state.playingGame.colMode);
+      return generateWinCombinations(this.activeGame.colMode);
     },
-    winningState() {
+    winningState(): MakeGameWinner | null {
       const moves = this.boardState;
       const combinations = this.winCombinations;
       return isWinningWithMoves(moves, combinations);
     },
   },
   watch: {
-    winningState(state: ReturnType<typeof isWinningWithMoves>) {
+    winningState(state: ReturnType<typeof isWinningWithMoves>): void {
       if (!state) {
         return;
       }
-      this.$store.commit(GAME_MUTATIONS.end, state);
+      console.log("winning state", state);
+      this.$store.dispatch(
+        `${STATE_MODULE.GAME}/${GameActions.gameIsDecided}`,
+        state
+      );
     },
   },
-  beforeCreate(this) {
-    this.$store.commit(GAME_MUTATIONS.create, createGamePlaceholder());
-  },
-  mounted() {
-    execQuery({
-      queryFn: () =>
-        ky
-          .get("https://jsonplaceholder.typicode.com/users")
-          .json<Array<User>>(),
-      onLoading: (isLoading) => {
-        this.usersLoading = isLoading;
-      },
-      onResolve: (users) => {
-        this.users = users;
-      },
-    });
-  },
-};
+});
 </script>

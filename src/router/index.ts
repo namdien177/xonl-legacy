@@ -1,6 +1,8 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import HomeView from "../views/HomeView.vue";
+import { GameDB } from "@/lib/_db/game.db";
+import { execQuery } from "@/lib/http/exec-query";
 
 Vue.use(VueRouter);
 
@@ -22,7 +24,7 @@ const router = new VueRouter({
       // which is lazy-loaded when the route is visited.
       children: [
         {
-          path: "",
+          path: "/",
           name: "game-list",
           component: () => import("../views/game/GameView.vue"),
         },
@@ -30,13 +32,32 @@ const router = new VueRouter({
           path: "room",
           redirect: {
             name: "game-list",
-            path: "",
           },
         },
         {
           path: "room/:id",
           name: "game-room-detail",
           component: () => import("../views/game/detail/GameDetailView.vue"),
+          beforeEnter: async (to, from, next) => {
+            const { id } = to.params;
+
+            // fetch game data
+            await execQuery({
+              queryFn: () => GameDB.getGame(id),
+              onResolve(result) {
+                console.log(result);
+                if (!result || !result.data) {
+                  return next({ name: "game-list" });
+                }
+
+                return next();
+              },
+              onReject(error) {
+                console.error("Error fetching game", error);
+                return next({ name: "game-list" });
+              },
+            });
+          },
         },
         {
           path: "create",

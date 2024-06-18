@@ -15,20 +15,27 @@
 
 <script lang="ts">
 import { buttonVariants } from "@/components/ui/button";
+import { defineComponent } from "vue";
+import { STATE_MODULE } from "@/state";
+import type { GameModuleState } from "@/state/game-module";
+import type { Game } from "@/lib/types/game-state";
 
-export default {
+export default defineComponent({
   computed: {
-    activeGame() {
-      return this.$store.state.playingGame;
+    gameStateModule(): GameModuleState {
+      return this.$store.state[STATE_MODULE.GAME];
     },
-    gameIsWaiting() {
-      return this.$store.state.playingGame?.status === "waiting";
+    activeGame(): Game | null {
+      return this.gameStateModule.activeGame;
     },
-    gameIsPlaying() {
-      return this.$store.state.playingGame?.status === "playing";
+    gameIsWaiting(): boolean {
+      return this.activeGame?.status === "waiting";
     },
-    gameIsOver() {
-      return this.$store.state.playingGame?.status === "finished";
+    gameIsPlaying(): boolean {
+      return this.activeGame?.status === "playing";
+    },
+    gameIsOver(): boolean {
+      return this.activeGame?.status === "finished";
     },
   },
   emits: {
@@ -48,5 +55,5 @@ export default {
       this.$emit("restart-game");
     },
   },
-};
+});
 </script>

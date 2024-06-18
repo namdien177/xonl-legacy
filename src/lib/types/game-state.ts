@@ -19,10 +19,12 @@ export type GamePlayer = {
 
 export type GameWinMode = "until-win" | "normal";
 
+export type GamePlayers = [GamePlayer, GamePlayer];
+
 export type Game = {
   id: string;
   name: string;
-  players: [GamePlayer, GamePlayer];
+  players: [GamePlayer, GamePlayer | null];
   status: "waiting" | "playing" | "finished";
   winMode: GameWinMode;
   colMode: number;
@@ -32,4 +34,14 @@ export type Game = {
   boardState: GameState;
   moves: GameLogs;
   logs: GameLogs;
+};
+
+export type GameCreatePayload = Omit<
+  Game,
+  "id" | "logs" | "moves" | "boardState"
+>;
+
+export type MakeGameWinner = {
+  winner_id: string;
+  winCombination: WinningCombination;
 };

@@ -25,3 +25,12 @@ extend("max_value", {
   ...max_value,
   message: "This field must be {max} or less",
 });
+
+extend("different_from", {
+  params: ["target"],
+  validate(value, params) {
+    const targetValue = "target" in params ? params.target : null;
+    return value !== targetValue;
+  },
+  message: "This field must be different from {target}",
+});

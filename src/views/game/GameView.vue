@@ -20,7 +20,7 @@
       </div>
 
       <div class="flex flex-col md:flex-row md:justify-start">
-        <router-link to="/game/create" :class="buttonVariants({})"
+        <router-link to="/game/create" :class="buttonVariants()"
           >Start a new game
         </router-link>
       </div>
@@ -30,13 +30,14 @@
 
 <script lang="ts">
 import { buttonVariants } from "@/components/ui/button";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
   methods: { buttonVariants },
   computed: {
     activeGame() {
-      return this.$store.state.playingGame;
+      return this.$store.state.playingGame?.activeGame;
     },
   },
-};
+});
 </script>

@@ -2,50 +2,20 @@ import type {
   Game,
   GameMove,
   GamePlayer,
-  WinningCombination,
+  GamePlayers,
 } from "@/lib/types/game-state";
 import Vue from "vue";
 
-const create = "createGame";
-const startPlaying = "setPlaying";
-const setMove = "setMove";
-const end = "endGame";
-const updateBoard = "updateBoard";
-const restart = "restartGame";
-
-export type MakeWinnerProps = {
-  winner_id: string;
-  winCombination: WinningCombination;
+const findPlayerById = (players: GamePlayers, id: string) => {
+  return players.find((player) => player?.id === id) as GamePlayer | undefined;
 };
 
-export const GAME_MUTATIONS = {
-  create,
-  startPlaying,
-  setMove,
-  updateBoard,
-  end,
-  restart,
-} as const;
-
-export const createGamePlaceholder = (): Game => {
-  const users: [GamePlayer, GamePlayer] = [
-    { id: "red", name: "Red Player" },
-    { id: "blue", name: "Blue Player" },
-  ];
-
-  const randomIds = Math.floor(Math.random() * 2);
-
-  return {
-    id: `game-${randomIds}`,
-    name: "new game!",
-    colMode: 3,
-    moves: [],
-    logs: [],
-    winMode: "until-win",
-    status: "waiting",
-    players: users,
-    boardState: [],
-  };
+const flipPlayer = (players: GamePlayers, currentId: string) => {
+  const [player1, player2] = players;
+  if (player1.id === currentId) {
+    return player2;
+  }
+  return player1;
 };
 
 export const updateMove = (move: GameMove, state: Game) => {
@@ -67,7 +37,7 @@ const updateMoveUntilWin = (
 ): null | Partial<Game> => {
   const board = state.boardState;
   const [row, col] = move.coordinate;
-  const user = state.players.find((player) => player.id === move.owner_id);
+  const user = findPlayerById(state.players as GamePlayers, move.owner_id);
 
   if (!user) {
     return null;
@@ -81,9 +51,7 @@ const updateMoveUntilWin = (
   const maxMovesLength = state.colMode * state.colMode;
   const currentMovesLength = state.moves.length;
   const isNormalMove = currentMovesLength < maxMovesLength - 2;
-  const currentTurn = state.players.find(
-    (player) => player.id !== move.owner_id
-  );
+  const currentTurn = flipPlayer(state.players as GamePlayers, move.owner_id);
 
   if (isNormalMove) {
     // update the game board
@@ -129,7 +97,7 @@ const updateMoveNormal = (
 ): null | Partial<Game> => {
   const board = state.boardState;
   const [row, col] = move.coordinate;
-  const user = state.players.find((player) => player.id === move.owner_id);
+  const user = findPlayerById(state.players as GamePlayers, move.owner_id);
 
   if (!user) {
     return null;
@@ -148,9 +116,7 @@ const updateMoveNormal = (
     return null;
   }
 
-  const currentTurn = state.players.find(
-    (player) => player.id !== move.owner_id
-  );
+  const currentTurn = flipPlayer(state.players as GamePlayers, move.owner_id);
 
   // update the game board
   if (!board[row]) {
