@@ -18,7 +18,7 @@
   </div>
 </template>
 
-<script lang="ts">
+<script>
 import { inputVariants } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -54,8 +54,12 @@ export default {
     onFocus() {
       this.$emit("focus");
     },
-    onInput(event: Event) {
-      const value = (event.target as HTMLInputElement).value;
+    /**
+     * Handle input event
+     * @param event {InputEvent}
+     */
+    onInput(event) {
+      const value = event.target.value;
       console.log("event", value);
       this.$emit("change", value);
     },

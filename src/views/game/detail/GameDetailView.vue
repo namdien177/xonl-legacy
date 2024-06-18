@@ -45,8 +45,9 @@ import GameHeader from "@/views/game/detail/_components/GameHeader.vue";
 import GameLogs from "@/views/game/detail/_components/GameLogs.vue";
 import GameControl from "@/views/game/detail/_components/GameControl.vue";
 import { GameActions } from "@/state/game-module/actions";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
   components: { GameControl, GameLogs, GameHeader, GameBoard },
   methods: {
     cn,
@@ -67,7 +68,7 @@ export default {
       };
       const isFirstPlayer =
         activeGame.players.findIndex(
-          (player) => player.id === currentUser.id
+          (player) => player?.id === currentUser.id
         ) === 0;
       if (isFirstPlayer) {
         // update the game logs
@@ -117,5 +118,5 @@ export default {
       this.$store.dispatch(GameActions.gameIsDecided, state);
     },
   },
-};
+});
 </script>

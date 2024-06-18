@@ -98,8 +98,9 @@ import { ValidationObserver, ValidationProvider } from "vee-validate";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import type { Game, GamePlayer } from "@/lib/types/game-state";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
   components: { ValidationProvider, ValidationObserver },
   data() {
     return {
@@ -172,9 +173,9 @@ export default {
     },
   },
   watch: {
-    inputValue(value) {
+    inputValue(value: string) {
       console.log(value);
     },
   },
-};
+});
 </script>

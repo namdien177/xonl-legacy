@@ -28,14 +28,14 @@
   </div>
 </template>
 
-<script lang="ts">
+<script>
 import { buttonVariants } from "@/components/ui/button";
 
 export default {
   methods: { buttonVariants },
   computed: {
     activeGame() {
-      return this.$store.state.playingGame.activeGame;
+      return this.$store.state.playingGame?.activeGame;
     },
   },
 };

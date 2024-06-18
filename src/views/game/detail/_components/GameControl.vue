@@ -15,8 +15,9 @@
 
 <script lang="ts">
 import { buttonVariants } from "@/components/ui/button";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
   computed: {
     activeGame() {
       return this.$store.state.playingGame;
@@ -48,5 +49,5 @@ export default {
       this.$emit("restart-game");
     },
   },
-};
+});
 </script>

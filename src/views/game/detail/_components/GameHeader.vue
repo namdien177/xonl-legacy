@@ -40,20 +40,24 @@
 <script lang="ts">
 import type { GamePlayer } from "@/lib/types/game-state";
 import { cn } from "@/lib/utils";
+import { defineComponent } from "vue";
 
-export default {
+export default defineComponent({
   methods: { cn },
   computed: {
+    playingGame() {
+      return this.$store.state.playingGame;
+    },
     players(): [GamePlayer, GamePlayer] {
       return (
-        this.$store.state.playingGame?.players ?? [
+        this.playingGame?.players ?? [
           { id: "red", name: "Player 1" },
           { id: "blue", name: "Player 2" },
         ]
       );
     },
     winner(): GamePlayer | null {
-      return this.$store.state.playingGame?.winner ?? null;
+      return this.playingGame?.winner ?? null;
     },
     isFirstPlayerWon(): boolean {
       return this.winner?.id === this.players[0].id;
@@ -62,5 +66,5 @@ export default {
       return this.winner?.id === this.players[1].id;
     },
   },
-};
+});
 </script>
